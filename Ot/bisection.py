@@ -1,77 +1,46 @@
-import math
+import sympy as sp
 
-DEGREE = 5
-TOLERANCE = 1e-6  # A small tolerance for the stopping condition in bisection
+def bisection_method(f, a, b, tol):
+    if f.subs(x, a) * f.subs(x, b) > 0:
+        print("No root found in the given interval.")
+        return None
 
-def display(coeffs):
-    print('f(x) = ', end='')
-    for i in range(DEGREE, -1, -1):
-        current = coeffs[DEGREE-i]
-        if math.trunc(current) == int(current):
-            current = int(current)
-        if current > 0: 
-            sign = '+' if i != DEGREE else ''  # No plus sign for the first term
-        elif current < 0:
-            sign = '-'  # Minus sign for negative coefficients
+    while (b - a) / 2.0 > tol:
+        midpoint = (a + b) / 2.0
+        if f.subs(x, midpoint) == 0:
+            return midpoint  # The midpoint is a root.
+        elif f.subs(x, a) * f.subs(x, midpoint) < 0:
+            b = midpoint
         else:
-            continue  # Skip zero coefficients
-        
-        current = '' if abs(current) == 1 and i != 0 else abs(current)
-        if i == 0:  # No x^0 term
-            print(f'{sign} {current}')
-        else:
-            print(f'{sign} {current}x^{i}', end=' ')
+            a = midpoint
+    return (a + b) / 2.0
 
-def f(x):
-    result = 0
-    for i in range(DEGREE + 1):
-        result += coeffs[i] * (x ** (DEGREE - i))
-    return result
+# Define the variable
+x = sp.symbols('x')
 
-def getInterval(initial=1):
-    last_sign = -1 if f(initial - 1) < 0 else 1
-    for i in range(initial, initial + 100):
-        current_f = f(i)
-        current_sign = -1 if current_f < 0 else 1
-        if last_sign == -1 and current_sign == 1:
-            return i - 1, i, '-+'
-        if last_sign == 1 and current_sign == -1:
-            return i - 1, i, '+-'
-        last_sign = current_sign
-    raise ValueError("No interval found with opposite signs.")
+# Take input from the user
+expr = input("Enter the function f(x): ")
 
-def bisection():
-    lower, upper, signs = getInterval()
-    while True:
-        xi = (lower + upper) / 2
-        answer = f(xi)
-        if abs(answer) < TOLERANCE:
-            return xi
-        if signs == '-+':
-            if answer < 0:
-                lower = xi
-            else:
-                upper = xi
-        else:
-            if answer > 0:
-                lower = xi
-            else:
-                upper = xi
+# Convert the input string into a symbolic expression
+f = sp.sympify(expr)
 
-coeffs = []
-for power in range(DEGREE, -1, -1):
-    while True:
-        try:
-            coeff = float(input(f"Enter coefficient of x^{power}: "))
-            coeffs.append(coeff)
-            break
-        except ValueError:
-            print("Invalid input. Please enter a number.")
+# Input for the interval and tolerance
+a = float(input("Enter the start of the interval [a]: "))
+b = float(input("Enter the end of the interval [b]: "))
+tolerance = float(input("Enter the tolerance: "))
 
-display(coeffs)
+# Perform the bisection method
+root = bisection_method(f, a, b, tolerance)
 
-try:
-    root = bisection()
-    print(f'Root: {root}')
-except ValueError as e:
-    print(e)
+if root is not None:
+    print(f"The approximate root is: {root:.6f}")
+else:
+    print("Failed to find a root.")
+
+
+""""
+Enter the function f(x): x**2 - 4
+Enter the start of the interval [a]: 1
+Enter the end of the interval [b]: 5
+Enter the tolerance: 0.001
+"""
