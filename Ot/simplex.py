@@ -1,91 +1,111 @@
-def display(equations, delta):
-    print(end='\t\t')
-    for i in range(len(equations[0])):  # changed to ensure flexibility with equations size
-        print(equations[0][i], end='\t')
-    print()
-    print('Cb', end='\t')
-    print('Xb', end='\t')
-    
-    for i in range(m): 
-        print(f'x{i+1}', end='\t')
-    
-    for i in range(n): 
-        print(f'S{i+1}', end='\t')
-    
-    print()
+import numpy as np
 
-    for i in range(1, len(equations)):  # start at 1 to skip the z equation
-        for coeff in equations[i]:
-            print(coeff, end='\t')
-        print()
-
-    print("\nDelta values:")
-    for i in range(len(delta)):
-        print(delta[i], end='\t')
-    print()
-
-
-def getCoefficients(equation, eqno):
-    coefficients = []
+def initialize_simplex(c, A, b):
+    """
+    Initialize the simplex tableau.
+    """
+    num_vars = len(c)
+    num_constraints = len(b)
     
-    # Add the Cb coefficient (0.0 for z, non-zero for constraints)
-    if eqno != '': 
-        coefficients.append(0.0)
+    # Create the tableau
+    tableau = np.zeros((num_constraints + 1, num_vars + num_constraints + 1))
     
-    i = 0
-    while i < len(equation):
-        if equation[i] == '+': 
-            pass
-        elif equation[i] == '<=': 
-            break  # to stop parsing the constraint at inequality
-        elif 'x' in equation[i]:
-            digit = equation[i][:equation[i].index('x')]
-            if (i > 0 and equation[i-1] == '-') or equation[i][0] == '-':
-                factor = -1.0
-            else:
-                factor = 1.0
-            
-            coeff = factor if digit == '' or digit == '-' else factor * float(digit)
-            coefficients.append(coeff)
-        elif equation[i] == '-':
-            pass
+    # Set up the objective function in the last row
+    tableau[-1, :num_vars] = -np.array(c)
+    
+    # Set up the constraints
+    for i in range(num_constraints):
+        tableau[i, :num_vars] = A[i]
+        tableau[i, num_vars + i] = 1  # Slack variable
+        tableau[i, -1] = b[i]  # Right-hand side
+    
+    return tableau
+
+def find_pivot(tableau):
+    """
+    Find the pivot position.
+    """
+    num_rows, num_cols = tableau.shape
+    col = np.argmin(tableau[-1, :-1])  # Choose entering variable (most negative coefficient)
+    
+    if tableau[-1, col] >= 0:
+        return None  # Optimal reached if no negative coefficients in the objective function row
+    
+    # Ratio test to find the exiting row
+    ratios = []
+    for i in range(num_rows - 1):
+        if tableau[i, col] > 0:
+            ratios.append(tableau[i, -1] / tableau[i, col])
         else:
-            coefficients.append(float(equation[i]))
-        i += 1
+            ratios.append(np.inf)
     
-    # Add slack variables (identity matrix column)
-    if eqno != '':  # only for constraints, not for z
-        for i in range(n):
-            identity = 1.0 if i == eqno else 0.0
-            coefficients.append(identity)
-    else:
-        for _ in range(n): 
-            coefficients.append(0.0)
+    row = np.argmin(ratios)
     
-    return coefficients
+    if ratios[row] == np.inf:
+        return None  # Problem is unbounded
+    
+    return (row, col)
+
+def perform_pivot(tableau, pivot):
+    """
+    Perform the pivot operation.
+    """
+    row, col = pivot
+    
+    # Normalize the pivot row
+    tableau[row, :] /= tableau[row, col]
+    
+    # Eliminate all other entries in the pivot column
+    for i in range(tableau.shape[0]):
+        if i != row:
+            tableau[i, :] -= tableau[i, col] * tableau[row, :]
+
+def simplex(c, A, b):
+    """
+    Solve the linear programming problem using the simplex method.
+    """
+    tableau = initialize_simplex(c, A, b)
+    
+    while True:
+        pivot = find_pivot(tableau)
+        if pivot is None:
+            break
+        perform_pivot(tableau, pivot)
+    
+    return tableau[-1, -1], tableau[:-1, -1]
+
+def input_vector(prompt, length):
+    return [float(x) for x in input(prompt + f" (separate by spaces, expected {length} values): ").split()]
+
+def main():
+    num_vars = int(input("Enter the number of decision variables: "))
+    num_constraints = int(input("Enter the number of constraints: "))
+
+    print("Enter the coefficients of the objective function to maximize.")
+    c = input_vector("Coefficients for the objective function", num_vars)
+
+    A = []
+    b = []
+    print("Enter the coefficients for each constraint followed by the RHS value.")
+    for i in range(num_constraints):
+        constraint_input = input_vector(f"Constraint {i+1} coefficients and RHS", num_vars + 1)
+        A.append(constraint_input[:-1])
+        b.append(constraint_input[-1])
+
+    optimal_value, variable_values = simplex(c, A, b)
+    print("Optimal Value:", optimal_value)
+    print("Values of Variables:", variable_values)
+
+if __name__ == "__main__":
+    main()
 
 
-def solve(equations):
-    delta = []
-    for column in range(m + n):  # iterate over columns, excluding Cb and RHS
-        deltaj = 0
-        for row in range(1, len(equations)):  # iterate over rows excluding z
-            deltaj += equations[row][0] * equations[row][column + 1]  # Cb * coefficient
-        
-        delta.append(deltaj - equations[0][column + 1])  # subtract z coefficients
-    return delta
-
-
-equations = []
-m = int(input("Enter no. of variables: "))
-n = int(input("Enter no. of constraints: "))
-
-z = input("Enter objective function (z): ")
-equations.append(getCoefficients(z.split(), ''))
-
-for i in range(n):
-    eq = input(f"Enter constraint {i+1}: ")
-    equations.append(getCoefficients(eq.split(), i))
-
-delta = solve(equations)
-display(equations, delta)
+""""
+Enter the number of decision variables: 2
+Enter the number of constraints: 2
+Enter the coefficients of the objective function to maximize.
+Coefficients for the objective function (separate by spaces, expected 2 values): 3 5
+Enter the coefficients for each constraint followed by the RHS value.
+Constraint 1 coefficients and RHS (separate by spaces, expected 3 values): 1 2 18
+Constraint 2 coefficients and RHS (separate by spaces, expected 3 values): 4 1 16
+"""

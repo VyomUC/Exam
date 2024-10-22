@@ -42,7 +42,6 @@ def decrypt_aes(key, ciphertext):
     
     return plaintext
 
-# Example usage
 key = os.urandom(32)  # AES-256 requires a 32-byte key
 plaintext = b"This is a secret message"
 
