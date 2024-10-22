@@ -26,8 +26,8 @@ def diffie_hellman(p, g):
 
     return A, B, shared_secret_Alice, shared_secret_Bob
 
-# Example values (p is a large prime, g is a primitive root modulo p)
-p = 23  # Small prime for simplicity in this example (use larger in real scenarios)
+
+p = 23  # Small prime for simplicity
 g = 5   # Primitive root modulo p
 
 # Perform Diffie-Hellman key exchange

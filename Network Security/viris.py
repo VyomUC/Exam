@@ -1,5 +1,4 @@
 # Write a viruswhich accepts a file name and changes every character to an asterisk
-# zzzzz (too easy)
 
 def virus(filename):
   try:
